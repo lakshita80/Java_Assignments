@@ -1,0 +1,108 @@
+import java.sql.*;
+import java.util.Scanner;
+
+public class ProductCRUD {
+    static final String URL = "jdbc:mysql://localhost:3306/companydb";
+    static final String USER = "root";
+    static final String PASSWORD = "your_password";
+
+    public static void main(String[] args) {
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+             Scanner sc = new Scanner(System.in)) {
+
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            con.setAutoCommit(false); // Enable transaction control
+            boolean exit = false;
+
+            while (!exit) {
+                System.out.println("\n==== PRODUCT MANAGEMENT MENU ====");
+                System.out.println("1. Add Product");
+                System.out.println("2. View All Products");
+                System.out.println("3. Update Product");
+                System.out.println("4. Delete Product");
+                System.out.println("5. Exit");
+                System.out.print("Choose option: ");
+                int choice = sc.nextInt();
+
+                switch (choice) {
+                    case 1 -> {
+                        System.out.print("Enter Product ID: ");
+                        int id = sc.nextInt();
+                        System.out.print("Enter Product Name: ");
+                        String name = sc.next();
+                        System.out.print("Enter Price: ");
+                        double price = sc.nextDouble();
+                        System.out.print("Enter Quantity: ");
+                        int qty = sc.nextInt();
+
+                        String insert = "INSERT INTO Product VALUES (?, ?, ?, ?)";
+                        try (PreparedStatement ps = con.prepareStatement(insert)) {
+                            ps.setInt(1, id);
+                            ps.setString(2, name);
+                            ps.setDouble(3, price);
+                            ps.setInt(4, qty);
+                            ps.executeUpdate();
+                            con.commit();
+                            System.out.println("✅ Product Added Successfully!");
+                        } catch (Exception e) {
+                            con.rollback();
+                            e.printStackTrace();
+                        }
+                    }
+
+                    case 2 -> {
+                        String select = "SELECT * FROM Product";
+                        try (Statement stmt = con.createStatement();
+                             ResultSet rs = stmt.executeQuery(select)) {
+                            System.out.println("\nProduct Records:");
+                            while (rs.next()) {
+                                System.out.println(rs.getInt(1) + " | " +
+                                        rs.getString(2) + " | " +
+                                        rs.getDouble(3) + " | " +
+                                        rs.getInt(4));
+                            }
+                        }
+                    }
+
+                    case 3 -> {
+                        System.out.print("Enter Product ID to Update: ");
+                        int id = sc.nextInt();
+                        System.out.print("Enter New Price: ");
+                        double price = sc.nextDouble();
+                        String update = "UPDATE Product SET Price=? WHERE ProductID=?";
+                        try (PreparedStatement ps = con.prepareStatement(update)) {
+                            ps.setDouble(1, price);
+                            ps.setInt(2, id);
+                            ps.executeUpdate();
+                            con.commit();
+                            System.out.println("✅ Product Updated Successfully!");
+                        } catch (Exception e) {
+                            con.rollback();
+                            e.printStackTrace();
+                        }
+                    }
+
+                    case 4 -> {
+                        System.out.print("Enter Product ID to Delete: ");
+                        int id = sc.nextInt();
+                        String delete = "DELETE FROM Product WHERE ProductID=?";
+                        try (PreparedStatement ps = con.prepareStatement(delete)) {
+                            ps.setInt(1, id);
+                            ps.executeUpdate();
+                            con.commit();
+                            System.out.println("🗑 Product Deleted Successfully!");
+                        } catch (Exception e) {
+                            con.rollback();
+                            e.printStackTrace();
+                        }
+                    }
+
+                    case 5 -> exit = true;
+                    default -> System.out.println("Invalid Choice! Try again.");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
