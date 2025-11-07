@@ -1,0 +1,169 @@
+import java.sql.*;
+import java.util.*;
+
+// ===== MODEL CLASS =====
+class Student {
+    private int studentID;
+    private String name;
+    private String department;
+    private double marks;
+
+    public Student(int studentID, String name, String department, double marks) {
+        this.studentID = studentID;
+        this.name = name;
+        this.department = department;
+        this.marks = marks;
+    }
+
+    public int getStudentID() { return studentID; }
+    public String getName() { return name; }
+    public String getDepartment() { return department; }
+    public double getMarks() { return marks; }
+
+    @Override
+    public String toString() {
+        return studentID + " | " + name + " | " + department + " | " + marks;
+    }
+}
+
+// ===== CONTROLLER CLASS =====
+class StudentDAO {
+    private final String URL = "jdbc:mysql://localhost:3306/schooldb"; // Your DB name
+    private final String USER = "root";  // Change username if needed
+    private final String PASSWORD = "your_password"; // Change to your MySQL password
+
+    // Get DB connection
+    private Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+
+    // Add a new student
+    public void addStudent(Student s) {
+        String query = "INSERT INTO Student (StudentID, Name, Department, Marks) VALUES (?, ?, ?, ?)";
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setInt(1, s.getStudentID());
+            ps.setString(2, s.getName());
+            ps.setString(3, s.getDepartment());
+            ps.setDouble(4, s.getMarks());
+            ps.executeUpdate();
+            System.out.println("✅ Student Added Successfully!");
+        } catch (SQLException e) {
+            System.out.println("❌ Error adding student: " + e.getMessage());
+        }
+    }
+
+    // Display all students
+    public void viewStudents() {
+        String query = "SELECT * FROM Student";
+        try (Connection con = getConnection();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            System.out.println("\n---- STUDENT RECORDS ----");
+            while (rs.next()) {
+                System.out.println(rs.getInt("StudentID") + " | "
+                        + rs.getString("Name") + " | "
+                        + rs.getString("Department") + " | "
+                        + rs.getDouble("Marks"));
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ Error fetching students: " + e.getMessage());
+        }
+    }
+
+    // Update student marks
+    public void updateMarks(int id, double marks) {
+        String query = "UPDATE Student SET Marks=? WHERE StudentID=?";
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setDouble(1, marks);
+            ps.setInt(2, id);
+            int rows = ps.executeUpdate();
+            if (rows > 0)
+                System.out.println("✅ Marks Updated Successfully!");
+            else
+                System.out.println("⚠️ Student Not Found!");
+        } catch (SQLException e) {
+            System.out.println("❌ Error updating marks: " + e.getMessage());
+        }
+    }
+
+    // Delete student
+    public void deleteStudent(int id) {
+        String query = "DELETE FROM Student WHERE StudentID=?";
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setInt(1, id);
+            int rows = ps.executeUpdate();
+            if (rows > 0)
+                System.out.println("🗑 Student Deleted Successfully!");
+            else
+                System.out.println("⚠️ Student Not Found!");
+        } catch (SQLException e) {
+            System.out.println("❌ Error deleting student: " + e.getMessage());
+        }
+    }
+}
+
+// ===== VIEW + MAIN CLASS =====
+public class StudentManagementApp {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        StudentDAO dao = new StudentDAO();
+
+        // Load JDBC driver (optional for modern versions)
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            System.out.println("MySQL Driver not found!");
+        }
+
+        boolean exit = false;
+        while (!exit) {
+            System.out.println("\n===== STUDENT MANAGEMENT SYSTEM =====");
+            System.out.println("1. Add Student");
+            System.out.println("2. View All Students");
+            System.out.println("3. Update Marks");
+            System.out.println("4. Delete Student");
+            System.out.println("5. Exit");
+            System.out.print("Enter your choice: ");
+            int choice = sc.nextInt();
+
+            switch (choice) {
+                case 1 -> {
+                    System.out.print("Enter Student ID: ");
+                    int id = sc.nextInt();
+                    sc.nextLine(); // consume newline
+                    System.out.print("Enter Name: ");
+                    String name = sc.nextLine();
+                    System.out.print("Enter Department: ");
+                    String dept = sc.nextLine();
+                    System.out.print("Enter Marks: ");
+                    double marks = sc.nextDouble();
+
+                    dao.addStudent(new Student(id, name, dept, marks));
+                }
+                case 2 -> dao.viewStudents();
+                case 3 -> {
+                    System.out.print("Enter Student ID to Update Marks: ");
+                    int id = sc.nextInt();
+                    System.out.print("Enter New Marks: ");
+                    double marks = sc.nextDouble();
+                    dao.updateMarks(id, marks);
+                }
+                case 4 -> {
+                    System.out.print("Enter Student ID to Delete: ");
+                    int id = sc.nextInt();
+                    dao.deleteStudent(id);
+                }
+                case 5 -> {
+                    exit = true;
+                    System.out.println("👋 Exiting... Thank you!");
+                }
+                default -> System.out.println("❌ Invalid Choice. Try Again!");
+            }
+        }
+
+        sc.close();
+    }
+}
