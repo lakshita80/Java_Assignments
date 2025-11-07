@@ -1,0 +1,81 @@
+// File: SpringHibernateTransactionExample.java
+import org.springframework.context.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.*;
+import org.springframework.transaction.annotation.*;
+import org.hibernate.*;
+import org.hibernate.cfg.Configuration;
+import jakarta.persistence.*;
+
+@Entity
+class Account {
+    @Id
+    private int id;
+    private String name;
+    private double balance;
+    public Account() {}
+    public Account(int id, String name, double balance) {
+        this.id = id; this.name = name; this.balance = balance;
+    }
+    // Getters/Setters omitted
+}
+
+@Repository
+class AccountDAO {
+    private SessionFactory factory = new Configuration()
+            .configure("hibernate.cfg.xml")
+            .addAnnotatedClass(Account.class)
+            .buildSessionFactory();
+
+    public Session getSession() { return factory.getCurrentSession(); }
+
+    public Account getAccount(int id) {
+        Session session = getSession();
+        return session.get(Account.class, id);
+    }
+
+    public void updateAccount(Account acc) {
+        getSession().update(acc);
+    }
+}
+
+@Service
+class BankService {
+    @Autowired
+    private AccountDAO dao;
+
+    @Transactional
+    public void transferMoney(int fromId, int toId, double amount) {
+        Session session = dao.getSession();
+        session.beginTransaction();
+
+        Account from = dao.getAccount(fromId);
+        Account to = dao.getAccount(toId);
+
+        if (from.getBalance() < amount)
+            throw new RuntimeException("Insufficient Balance");
+
+        from.setBalance(from.getBalance() - amount);
+        to.setBalance(to.getBalance() + amount);
+
+        dao.updateAccount(from);
+        dao.updateAccount(to);
+
+        session.getTransaction().commit();
+        System.out.println("Transaction Successful!");
+    }
+}
+
+@Configuration
+@EnableTransactionManagement
+@ComponentScan(basePackages = "com.example")
+class TxConfig {}
+
+public class SpringHibernateTransactionExample {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(TxConfig.class);
+        BankService service = context.getBean(BankService.class);
+        service.transferMoney(101, 102, 500.0);
+        context.close();
+    }
+}
