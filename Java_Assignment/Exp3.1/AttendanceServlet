@@ -1,0 +1,40 @@
+package com.example;
+
+import java.io.*;
+import java.sql.*;
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+
+public class AttendanceServlet extends HttpServlet {
+
+    private static final String URL = "jdbc:mysql://localhost:3306/testdb";
+    private static final String USER = "root";
+    private static final String PASSWORD = "root";
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String id = request.getParameter("studentID");
+        String date = request.getParameter("date");
+        String status = request.getParameter("status");
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+
+            PreparedStatement ps = conn.prepareStatement("INSERT INTO Attendance VALUES (?, ?, ?)");
+            ps.setInt(1, Integer.parseInt(id));
+            ps.setString(2, date);
+            ps.setString(3, status);
+            ps.executeUpdate();
+
+            out.println("<h3 style='color:green;'>Attendance recorded successfully!</h3>");
+            conn.close();
+        } catch (Exception e) {
+            e.printStackTrace(out);
+        }
+    }
+}
