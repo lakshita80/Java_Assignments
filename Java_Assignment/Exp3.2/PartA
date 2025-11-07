@@ -1,0 +1,43 @@
+// File: SpringDIExample.java
+import org.springframework.context.annotation.*;
+
+class Course {
+    public void displayCourse() {
+        System.out.println("Course: Java Full Stack Development");
+    }
+}
+
+class Student {
+    private Course course;
+
+    public Student(Course course) {  // Constructor Injection
+        this.course = course;
+    }
+
+    public void showInfo() {
+        System.out.println("Student enrolled in:");
+        course.displayCourse();
+    }
+}
+
+@Configuration
+class AppConfig {
+    @Bean
+    public Course course() {
+        return new Course();
+    }
+
+    @Bean
+    public Student student() {
+        return new Student(course());
+    }
+}
+
+public class SpringDIExample {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        Student student = context.getBean(Student.class);
+        student.showInfo();
+        context.close();
+    }
+}
