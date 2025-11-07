@@ -1,0 +1,69 @@
+// File: HibernateCRUDExample.java
+import org.hibernate.*;
+import org.hibernate.cfg.Configuration;
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "student")
+class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "course")
+    private String course;
+
+    public Student() {}
+    public Student(String name, String course) {
+        this.name = name;
+        this.course = course;
+    }
+
+    // Getters and setters omitted for brevity
+    public String toString() { return id + " | " + name + " | " + course; }
+}
+
+public class HibernateCRUDExample {
+    public static void main(String[] args) {
+        SessionFactory factory = new Configuration()
+                .configure("hibernate.cfg.xml")
+                .addAnnotatedClass(Student.class)
+                .buildSessionFactory();
+
+        Session session = factory.openSession();
+
+        try {
+            // Create
+            session.beginTransaction();
+            Student s1 = new Student("Anchal", "Spring Boot");
+            session.save(s1);
+            session.getTransaction().commit();
+            System.out.println("Student Saved: " + s1);
+
+            // Read
+            session = factory.openSession();
+            Student readStudent = session.get(Student.class, s1.id);
+            System.out.println("Student Read: " + readStudent);
+
+            // Update
+            session.beginTransaction();
+            readStudent.course = "Hibernate & JPA";
+            session.update(readStudent);
+            session.getTransaction().commit();
+            System.out.println("Student Updated: " + readStudent);
+
+            // Delete
+            session.beginTransaction();
+            session.delete(readStudent);
+            session.getTransaction().commit();
+            System.out.println("Student Deleted");
+
+        } finally {
+            session.close();
+            factory.close();
+        }
+    }
+}
